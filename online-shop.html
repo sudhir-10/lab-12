@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ShopEasy - Online Purchase</title>
+
+<!-- =========================== CSS =========================== -->
+<style>
+  :root {
+    --primary: #4f46e5;
+    --primary-dark: #4338ca;
+    --accent: #f59e0b;
+    --bg: #f5f6fa;
+    --card: #ffffff;
+    --text: #1f2937;
+    --muted: #6b7280;
+    --border: #e5e7eb;
+    --ok: #15803d;
+    --err: #b91c1c;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); }
+  a { color: inherit; text-decoration: none; }
+
+  /* ---------- header / nav ---------- */
+  header { background: var(--primary); color: #fff; position: sticky; top: 0; z-index: 10; box-shadow: 0 2px 8px rgba(0,0,0,.15); }
+  .nav { max-width: 1100px; margin: auto; display: flex; align-items: center; gap: 8px; padding: 12px 16px; flex-wrap: wrap; }
+  .logo { font-size: 22px; font-weight: 800; margin-right: auto; }
+  .logo span { color: var(--accent); }
+  .nav a.link { padding: 8px 12px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .nav a.link:hover, .nav a.link.active { background: rgba(255,255,255,.18); }
+  .badge { background: var(--accent); color: #111; border-radius: 999px; padding: 1px 7px; font-size: 12px; margin-left: 4px; }
+
+  main { max-width: 1100px; margin: 24px auto; padding: 0 16px; min-height: 70vh; }
+  .page { display: none; }
+  .page.active { display: block; animation: fade .25s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(6px);} to { opacity: 1; transform: none; } }
+  h2 { margin-top: 0; }
+
+  /* ---------- hero ---------- */
+  .hero { background: linear-gradient(135deg, var(--primary), #7c3aed); color: #fff; border-radius: 16px; padding: 48px 32px; text-align: center; }
+  .hero h1 { margin: 0 0 8px; font-size: 36px; }
+  .hero p { margin: 0 0 20px; opacity: .9; }
+  .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin: 24px 0; }
+  .feature { background: var(--card); border-radius: 12px; padding: 20px; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
+  .feature .ic { font-size: 32px; }
+
+  /* ---------- buttons ---------- */
+  .btn { display: inline-block; border: 0; border-radius: 8px; padding: 10px 18px; font-size: 14px; font-weight: 600; cursor: pointer; background: var(--primary); color: #fff; }
+  .btn:hover { background: var(--primary-dark); }
+  .btn.accent { background: var(--accent); color: #111; }
+  .btn.accent:hover { background: #d98a06; }
+  .btn.ghost { background: transparent; color: var(--primary); border: 1px solid var(--primary); }
+  .btn.small { padding: 6px 12px; font-size: 13px; }
+  .btn.danger { background: #fee2e2; color: var(--err); }
+
+  /* ---------- catalogue ---------- */
+  .toolbar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+  .toolbar input, .toolbar select { padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; background: #fff; }
+  .toolbar input { flex: 1; min-width: 180px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 18px; }
+  .product { background: var(--card); border-radius: 12px; padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,.06); display: flex; flex-direction: column; transition: transform .15s, box-shadow .15s; }
+  .product:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,.1); }
+  .product .pic { font-size: 64px; text-align: center; background: #f3f4f6; border-radius: 10px; padding: 14px 0; }
+  .product h3 { margin: 12px 0 4px; font-size: 16px; }
+  .product .cat { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+  .product .desc { font-size: 13px; color: var(--muted); flex: 1; margin: 6px 0 10px; }
+  .product .row { display: flex; align-items: center; justify-content: space-between; }
+  .price { font-size: 18px; font-weight: 800; color: var(--primary); }
+  .stock { font-size: 12px; color: var(--ok); }
+  .stock.low { color: var(--err); }
+
+  /* ---------- tables / cart ---------- */
+  .panel { background: var(--card); border-radius: 12px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--border); font-size: 14px; }
+  th { color: var(--muted); font-size: 12px; text-transform: uppercase; }
+  .qty { display: inline-flex; align-items: center; gap: 6px; }
+  .qty button { width: 26px; height: 26px; border: 1px solid var(--border); background: #fff; border-radius: 6px; cursor: pointer; }
+  .total-row { display: flex; justify-content: flex-end; gap: 24px; margin-top: 14px; font-size: 18px; font-weight: 700; }
+  .empty { text-align: center; color: var(--muted); padding: 30px 0; }
+
+  /* ---------- forms ---------- */
+  .form-wrap { max-width: 480px; margin: auto; }
+  .two-col { display: grid; grid-template-columns: 1fr 340px; gap: 20px; }
+  @media (max-width: 800px) { .two-col { grid-template-columns: 1fr; } }
+  label { display: block; font-size: 13px; font-weight: 600; margin: 12px 0 5px; }
+  input[type=text], input[type=email], input[type=password], input[type=tel], textarea, select.f {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; font-family: inherit; outline: none;
+  }
+  input:focus, textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79,70,229,.15); }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .msg { padding: 10px 12px; border-radius: 8px; font-size: 14px; margin: 12px 0; display: none; }
+  .msg.err { display: block; background: #fee2e2; color: var(--err); }
+  .msg.ok  { display: block; background: #dcfce7; color: var(--ok); }
+  pre.xml { background: #111827; color: #a7f3d0; padding: 14px; border-radius: 10px; overflow: auto; font-size: 12px; max-height: 260px; }
+
+  footer { text-align: center; color: var(--muted); font-size: 13px; padding: 24px 0; }
+
+  /* toast */
+  #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: #111827; color: #fff; padding: 10px 20px; border-radius: 999px; font-size: 14px; opacity: 0; transition: .3s; z-index: 50; }
+  #toast.show { transform: translateX(-50%); opacity: 1; }
+</style>
+</head>
+<body>
+
+<!-- =========================== HEADER =========================== -->
+<header>
+  <div class="nav">
+    <div class="logo">Shop<span>Easy</span></div>
+    <a class="link" data-page="home">Home</a>
+    <a class="link" data-page="catalogue">Catalogue</a>
+    <a class="link" data-page="cart">Cart<span class="badge" id="cartCount">0</span></a>
+    <a class="link" data-page="feedback">Feedback</a>
+    <span id="authLinks">
+      <a class="link" data-page="login">Login</a>
+      <a class="link" data-page="register">Register</a>
+    </span>
+  </div>
+</header>
+
+<main>
+
+  <!-- ===================== PAGE 1: HOME ===================== -->
+  <section class="page" id="page-home">
+    <div class="hero">
+      <h1>Everything you need, delivered.</h1>
+      <p>Browse our catalogue, add to cart and check out in minutes.</p>
+      <a class="btn accent" data-page="catalogue">Start Shopping</a>
+    </div>
+    <div class="features">
+      <div class="feature"><div class="ic">🚚</div><h3>Free Delivery</h3><p>On orders above ₹999</p></div>
+      <div class="feature"><div class="ic">🔒</div><h3>Secure Payment</h3><p>Your details stay safe</p></div>
+      <div class="feature"><div class="ic">↩️</div><h3>Easy Returns</h3><p>7-day return policy</p></div>
+      <div class="feature"><div class="ic">⭐</div><h3>Top Quality</h3><p>Handpicked products</p></div>
+    </div>
+    <h2>Featured Products</h2>
+    <div class="grid" id="featuredGrid"></div>
+  </section>
+
+  <!-- ===================== PAGE 2: CATALOGUE ===================== -->
+  <section class="page" id="page-catalogue">
+    <h2>Product Catalogue</h2>
+    <div class="toolbar">
+      <input type="text" id="searchBox" placeholder="Search products...">
+      <select id="categoryFilter"></select>
+      <select id="sortBy">
+        <option value="">Sort: Default</option>
+        <option value="low">Price: Low to High</option>
+        <option value="high">Price: High to Low</option>
+        <option value="name">Name: A to Z</option>
+      </select>
+    </div>
+    <div class="grid" id="catalogGrid"></div>
+  </section>
+
+  <!-- ===================== PAGE 3: CART ===================== -->
+  <section class="page" id="page-cart">
+    <h2>Your Shopping Cart</h2>
+    <div class="panel" id="cartPanel"></div>
+  </section>
+
+  <!-- ===================== PAGE 4: CHECKOUT / PAYMENT ===================== -->
+  <section class="page" id="page-checkout">
+    <h2>Checkout &amp; Payment</h2>
+    <div class="two-col">
+      <div class="panel">
+        <form id="checkoutForm" novalidate>
+          <h3 style="margin-top:0">Shipping details</h3>
+          <label for="coName">Full name</label>
+          <input type="text" id="coName">
+          <label for="coAddr">Address</label>
+          <textarea id="coAddr" rows="2"></textarea>
+          <div class="row2">
+            <div><label for="coCity">City</label><input type="text" id="coCity"></div>
+            <div><label for="coPin">PIN code</label><input type="text" id="coPin" maxlength="6"></div>
+          </div>
+          <label for="coPhone">Phone</label>
+          <input type="tel" id="coPhone" maxlength="10">
+
+          <h3>Payment</h3>
+          <label for="coMethod">Method</label>
+          <select class="f" id="coMethod">
+            <option value="card">Credit / Debit card</option>
+            <option value="cod">Cash on delivery</option>
+          </select>
+          <div id="cardFields">
+            <label for="coCard">Card number</label>
+            <input type="text" id="coCard" maxlength="19" placeholder="1234 5678 9012 3456">
+            <div class="row2">
+              <div><label for="coExp">Expiry (MM/YY)</label><input type="text" id="coExp" maxlength="5" placeholder="08/28"></div>
+              <div><label for="coCvv">CVV</label><input type="password" id="coCvv" maxlength="3"></div>
+            </div>
+          </div>
+          <div class="msg" id="coMsg"></div>
+          <button class="btn accent" type="submit" style="width:100%;margin-top:6px">Pay &amp; Place Order</button>
+        </form>
+      </div>
+      <div class="panel">
+        <h3 style="margin-top:0">Order summary</h3>
+        <div id="summaryBox"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== PAGE 5: ORDER CONFIRMATION ===================== -->
+  <section class="page" id="page-confirm">
+    <div class="panel" style="max-width:640px;margin:auto">
+      <div style="text-align:center">
+        <div style="font-size:54px">🎉</div>
+        <h2 style="color:var(--ok);margin-bottom:4px">Order placed successfully!</h2>
+        <p id="confirmText" style="color:var(--muted)"></p>
+      </div>
+      <h4>Order record (XML)</h4>
+      <pre class="xml" id="orderXml"></pre>
+      <div style="text-align:center;margin-top:14px"><a class="btn" data-page="catalogue">Continue Shopping</a></div>
+    </div>
+  </section>
+
+  <!-- ===================== PAGE 6: REGISTRATION ===================== -->
+  <section class="page" id="page-register">
+    <div class="panel form-wrap">
+      <h2>Create an account</h2>
+      <form id="registerForm" novalidate>
+        <label for="rgName">Full name</label><input type="text" id="rgName">
+        <label for="rgEmail">Email</label><input type="email" id="rgEmail">
+        <label for="rgPass">Password (min 6 characters)</label><input type="password" id="rgPass">
+        <label for="rgPass2">Confirm password</label><input type="password" id="rgPass2">
+        <div class="msg" id="rgMsg"></div>
+        <button class="btn" type="submit" style="width:100%;margin-top:8px">Register</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- ===================== PAGE 7: LOGIN ===================== -->
+  <section class="page" id="page-login">
+    <div class="panel form-wrap">
+      <h2>Login</h2>
+      <form id="loginForm" novalidate>
+        <label for="lgEmail">Email</label><input type="email" id="lgEmail">
+        <label for="lgPass">Password</label><input type="password" id="lgPass">
+        <div class="msg" id="lgMsg"></div>
+        <button class="btn" type="submit" style="width:100%;margin-top:8px">Login</button>
+      </form>
+      <p style="font-size:13px;color:var(--muted)">New here? <a class="link-inline" data-page="register" style="color:var(--primary);cursor:pointer;font-weight:600">Create an account</a></p>
+    </div>
+  </section>
+
+  <!-- ===================== PAGE 8: FEEDBACK ===================== -->
+  <section class="page" id="page-feedback">
+    <div class="panel form-wrap">
+      <h2>Feedback &amp; Contact</h2>
+      <form id="feedbackForm" novalidate>
+        <label for="fbName">Name</label><input type="text" id="fbName">
+        <label for="fbEmail">Email</label><input type="email" id="fbEmail">
+        <label for="fbRating">Rating</label>
+        <select class="f" id="fbRating">
+          <option value="5">★★★★★ Excellent</option>
+          <option value="4">★★★★ Good</option>
+          <option value="3">★★★ Average</option>
+          <option value="2">★★ Poor</option>
+          <option value="1">★ Very poor</option>
+        </select>
+        <label for="fbText">Your message</label><textarea id="fbText" rows="4"></textarea>
+        <div class="msg" id="fbMsg"></div>
+        <button class="btn" type="submit" style="width:100%;margin-top:8px">Submit feedback</button>
+      </form>
+    </div>
+  </section>
+
+</main>
+
+<footer>© 2026 ShopEasy · Built with HTML, CSS, JavaScript &amp; XML</footer>
+<div id="toast"></div>
+
+<!-- =========================== XML DATA (product catalogue) =========================== -->
+<script type="application/xml" id="productXml">
+<?xml version="1.0" encoding="UTF-8"?>
+<catalog>
+  <product id="1" category="Electronics" featured="true">
+    <name>Wireless Headphones</name>
+    <price>2499</price>
+    <stock>12</stock>
+    <icon>🎧</icon>
+    <description>Over-ear Bluetooth headphones with 30-hour battery life.</description>
+  </product>
+  <product id="2" category="Electronics" featured="true">
+    <name>Smart Watch</name>
+    <price>3999</price>
+    <stock>8</stock>
+    <icon>⌚</icon>
+    <description>Fitness tracking, heart-rate monitor and notifications.</description>
+  </product>
+  <product id="3" category="Electronics">
+    <name>Bluetooth Speaker</name>
+    <price>1799</price>
+    <stock>20</stock>
+    <icon>🔊</icon>
+    <description>Portable waterproof speaker with deep bass.</description>
+  </product>
+  <product id="4" category="Fashion" featured="true">
+    <name>Running Shoes</name>
+    <price>2999</price>
+    <stock>15</stock>
+    <icon>👟</icon>
+    <description>Lightweight, breathable shoes for everyday running.</description>
+  </product>
+  <product id="5" category="Fashion">
+    <name>Backpack</name>
+    <price>1299</price>
+    <stock>3</stock>
+    <icon>🎒</icon>
+    <description>Water-resistant 25L backpack with laptop sleeve.</description>
+  </product>
+  <product id="6" category="Fashion">
+    <name>Sunglasses</name>
+    <price>899</price>
+    <stock>25</stock>
+    <icon>🕶️</icon>
+    <description>UV-protected polarised sunglasses.</description>
+  </product>
+  <product id="7" category="Books">
+    <name>Programming Book</name>
+    <price>599</price>
+    <stock>30</stock>
+    <icon>📘</icon>
+    <description>Learn web development step by step with projects.</description>
+  </product>
+  <product id="8" category="Books">
+    <name>Notebook Set</name>
+    <price>349</price>
+    <stock>50</stock>
+    <icon>📓</icon>
+    <description>Pack of 3 ruled notebooks, 200 pages each.</description>
+  </product>
+  <product id="9" category="Home">
+    <name>Coffee Mug</name>
+    <price>249</price>
+    <stock>40</stock>
+    <icon>☕</icon>
+    <description>Ceramic mug, microwave and dishwasher safe.</description>
+  </product>
+  <product id="10" category="Home" featured="true">
+    <name>Desk Lamp</name>
+    <price>999</price>
+    <stock>2</stock>
+    <icon>💡</icon>
+    <description>LED lamp with adjustable brightness and angle.</description>
+  </product>
+  <product id="11" category="Home">
+    <name>Water Bottle</name>
+    <price>399</price>
+    <stock>35</stock>
+    <icon>🍶</icon>
+    <description>Insulated steel bottle keeps drinks cold for 24 hours.</description>
+  </product>
+  <product id="12" category="Electronics">
+    <name>Gaming Mouse</name>
+    <price>1499</price>
+    <stock>18</stock>
+    <icon>🖱️</icon>
+    <description>Ergonomic mouse with RGB lighting and 6 buttons.</description>
+  </product>
+</catalog>
+</script>
+
+<!-- =========================== JAVASCRIPT =========================== -->
+<script>
+"use strict";
+
+/* ---------- storage helpers (localStorage may be unavailable; fall back to memory) ---------- */
+const memory = {};
+function load(key, fallback) {
+  try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }
+  catch (e) { return key in memory ? memory[key] : fallback; }
+}
+function save(key, value) {
+  memory[key] = value;
+  try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) { /* ignore */ }
+}
+
+/* ---------- parse the XML catalogue ---------- */
+const xmlText = document.getElementById("productXml").textContent.trim();
+const xmlDoc = new DOMParser().parseFromString(xmlText, "application/xml");
+if (xmlDoc.getElementsByTagName("parsererror").length) console.error("XML parse error");
+
+const products = Array.from(xmlDoc.getElementsByTagName("product")).map(p => ({
+  id: Number(p.getAttribute("id")),
+  category: p.getAttribute("category"),
+  featured: p.getAttribute("featured") === "true",
+  name: p.getElementsByTagName("name")[0].textContent,
+  price: Number(p.getElementsByTagName("price")[0].textContent),
+  stock: Number(p.getElementsByTagName("stock")[0].textContent),
+  icon: p.getElementsByTagName("icon")[0].textContent,
+  description: p.getElementsByTagName("description")[0].textContent
+}));
+const byId = id => products.find(p => p.id === Number(id));
+
+/* ---------- state ---------- */
+let cart = load("cart", {});          // { productId: qty }
+let currentUser = load("currentUser", null);
+
+/* ---------- utilities ---------- */
+const $ = id => document.getElementById(id);
+const money = n => "₹" + n.toLocaleString("en-IN");
+function esc(s) { const d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
+function toast(text) {
+  const t = $("toast"); t.textContent = text; t.classList.add("show");
+  clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove("show"), 1800);
+}
+function setMsg(id, text, type) { const m = $(id); m.textContent = text; m.className = "msg " + (type || ""); }
+async function hash(text) {
+  if (window.crypto && crypto.subtle) {
+    const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
+  }
+  let h = 5381; for (let i = 0; i < text.length; i++) h = ((h << 5) + h + text.charCodeAt(i)) >>> 0;
+  return "fb-" + h.toString(16);
+}
+
+/* ---------- navigation (simple page switcher) ---------- */
+function showPage(name) {
+  if (name === "checkout" && !Object.keys(cart).length) { toast("Your cart is empty"); name = "cart"; }
+  document.querySelectorAll(".page").forEach(p => p.classList.toggle("active", p.id === "page-" + name));
+  document.querySelectorAll(".nav a.link").forEach(a => a.classList.toggle("active", a.dataset.page === name));
+  if (name === "cart") renderCart();
+  if (name === "checkout") renderCheckout();
+  window.scrollTo(0, 0);
+}
+document.addEventListener("click", e => {
+  const el = e.target.closest("[data-page]");
+  if (el) { e.preventDefault(); showPage(el.dataset.page); }
+});
+
+/* ---------- product cards ---------- */
+function productCard(p) {
+  const low = p.stock <= 5;
+  return `
+    <div class="product">
+      <div class="pic">${p.icon}</div>
+      <div class="cat" style="margin-top:10px">${esc(p.category)}</div>
+      <h3>${esc(p.name)}</h3>
+      <div class="desc">${esc(p.description)}</div>
+      <div class="row">
+        <span class="price">${money(p.price)}</span>
+        <span class="stock ${low ? "low" : ""}">${low ? "Only " + p.stock + " left" : "In stock"}</span>
+      </div>
+      <button class="btn small" style="margin-top:10px" onclick="addToCart(${p.id})">Add to cart</button>
+    </div>`;
+}
+
+function renderFeatured() {
+  $("featuredGrid").innerHTML = products.filter(p => p.featured).map(productCard).join("");
+}
+
+function setupFilters() {
+  const cats = ["All", ...new Set(products.map(p => p.category))];
+  $("categoryFilter").innerHTML = cats.map(c => `<option value="${c}">${c === "All" ? "All categories" : c}</option>`).join("");
+}
+
+function renderCatalog() {
+  const q = $("searchBox").value.trim().toLowerCase();
+  const cat = $("categoryFilter").value;
+  const sort = $("sortBy").value;
+  let list = products.filter(p =>
+    (cat === "All" || p.category === cat) &&
+    (p.name.toLowerCase().includes(q) || p.description.toLowerCase().includes(q)));
+  if (sort === "low") list.sort((a, b) => a.price - b.price);
+  if (sort === "high") list.sort((a, b) => b.price - a.price);
+  if (sort === "name") list.sort((a, b) => a.name.localeCompare(b.name));
+  $("catalogGrid").innerHTML = list.length ? list.map(productCard).join("") : `<p class="empty">No products found.</p>`;
+}
+["searchBox", "categoryFilter", "sortBy"].forEach(id => $(id).addEventListener("input", renderCatalog));
+
+/* ---------- cart ---------- */
+function cartTotal() {
+  return Object.entries(cart).reduce((s, [id, q]) => s + byId(id).price * q, 0);
+}
+function updateBadge() {
+  $("cartCount").textContent = Object.values(cart).reduce((a, b) => a + b, 0);
+}
+function addToCart(id) {
+  const p = byId(id);
+  const have = cart[id] || 0;
+  if (have >= p.stock) { toast("No more stock available"); return; }
+  cart[id] = have + 1;
+  save("cart", cart); updateBadge();
+  toast(p.name + " added to cart");
+}
+function changeQty(id, delta) {
+  const p = byId(id);
+  const q = (cart[id] || 0) + delta;
+  if (q <= 0) delete cart[id];
+  else if (q > p.stock) { toast("Only " + p.stock + " in stock"); return; }
+  else cart[id] = q;
+  save("cart", cart); updateBadge(); renderCart();
+}
+function removeItem(id) { delete cart[id]; save("cart", cart); updateBadge(); renderCart(); }
+
+function renderCart() {
+  const ids = Object.keys(cart);
+  if (!ids.length) {
+    $("cartPanel").innerHTML = `<div class="empty">Your cart is empty.<br><br><a class="btn" data-page="catalogue">Browse products</a></div>`;
+    return;
+  }
+  const rows = ids.map(id => {
+    const p = byId(id), q = cart[id];
+    return `<tr>
+      <td>${p.icon} ${esc(p.name)}</td>
+      <td>${money(p.price)}</td>
+      <td><span class="qty"><button onclick="changeQty(${id},-1)">−</button>${q}<button onclick="changeQty(${id},1)">+</button></span></td>
+      <td>${money(p.price * q)}</td>
+      <td><button class="btn small danger" onclick="removeItem(${id})">Remove</button></td>
+    </tr>`;
+  }).join("");
+  $("cartPanel").innerHTML = `
+    <table>
+      <thead><tr><th>Product</th><th>Price</th><th>Qty</th><th>Subtotal</th><th></th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div class="total-row"><span>Total</span><span>${money(cartTotal())}</span></div>
+    <div style="text-align:right;margin-top:14px">
+      <a class="btn ghost" data-page="catalogue">Continue shopping</a>
+      <a class="btn accent" data-page="checkout">Proceed to checkout</a>
+    </div>`;
+}
+
+/* ---------- checkout ---------- */
+function shippingFee(sub) { return sub >= 999 ? 0 : 79; }
+
+function renderCheckout() {
+  const sub = cartTotal(), ship = shippingFee(sub);
+  const lines = Object.entries(cart).map(([id, q]) => {
+    const p = byId(id);
+    return `<div style="display:flex;justify-content:space-between;font-size:14px;margin:6px 0"><span>${p.icon} ${esc(p.name)} × ${q}</span><span>${money(p.price * q)}</span></div>`;
+  }).join("");
+  $("summaryBox").innerHTML = lines + `
+    <hr style="border:0;border-top:1px solid var(--border)">
+    <div style="display:flex;justify-content:space-between;font-size:14px"><span>Subtotal</span><span>${money(sub)}</span></div>
+    <div style="display:flex;justify-content:space-between;font-size:14px;margin-top:4px"><span>Shipping</span><span>${ship ? money(ship) : "Free"}</span></div>
+    <div style="display:flex;justify-content:space-between;font-weight:800;font-size:18px;margin-top:10px"><span>Total</span><span>${money(sub + ship)}</span></div>`;
+  if (currentUser && !$("coName").value) $("coName").value = currentUser.name;
+  setMsg("coMsg", "", "");
+}
+
+$("coMethod").addEventListener("change", () => {
+  $("cardFields").style.display = $("coMethod").value === "card" ? "block" : "none";
+});
+$("coCard").addEventListener("input", e => {
+  const d = e.target.value.replace(/\D/g, "").slice(0, 16);
+  e.target.value = d.replace(/(.{4})/g, "$1 ").trim();
+});
+
+function luhn(num) {
+  let sum = 0, alt = false;
+  for (let i = num.length - 1; i >= 0; i--) {
+    let n = Number(num[i]);
+    if (alt) { n *= 2; if (n > 9) n -= 9; }
+    sum += n; alt = !alt;
+  }
+  return sum % 10 === 0;
+}
+
+$("checkoutForm").addEventListener("submit", e => {
+  e.preventDefault();
+  const name = $("coName").value.trim(), addr = $("coAddr").value.trim(),
+        city = $("coCity").value.trim(), pin = $("coPin").value.trim(),
+        phone = $("coPhone").value.trim(), method = $("coMethod").value;
+
+  if (!name || !addr || !city) return setMsg("coMsg", "Please fill in name, address and city.", "err");
+  if (!/^\d{6}$/.test(pin)) return setMsg("coMsg", "PIN code must be 6 digits.", "err");
+  if (!/^[6-9]\d{9}$/.test(phone)) return setMsg("coMsg", "Enter a valid 10-digit mobile number.", "err");
+
+  if (method === "card") {
+    const card = $("coCard").value.replace(/\s/g, "");
+    const exp = $("coExp").value.trim();
+    if (card.length !== 16 || !luhn(card)) return setMsg("coMsg", "Enter a valid 16-digit card number.", "err");
+    const m = exp.match(/^(\d{2})\/(\d{2})$/);
+    if (!m || Number(m[1]) < 1 || Number(m[1]) > 12) return setMsg("coMsg", "Expiry must be in MM/YY format.", "err");
+    const now = new Date(), yy = now.getFullYear() % 100, mm = now.getMonth() + 1;
+    if (Number(m[2]) < yy || (Number(m[2]) === yy && Number(m[1]) < mm)) return setMsg("coMsg", "This card has expired.", "err");
+    if (!/^\d{3}$/.test($("coCvv").value)) return setMsg("coMsg", "CVV must be 3 digits.", "err");
+  }
+
+  placeOrder({ name, addr, city, pin, phone, method });
+});
+
+function placeOrder(info) {
+  const sub = cartTotal(), ship = shippingFee(sub);
+  const orderId = "ORD" + Date.now().toString().slice(-8);
+
+  // Build the order as an XML document
+  const doc = document.implementation.createDocument("", "order", null);
+  const root = doc.documentElement;
+  root.setAttribute("id", orderId);
+  root.setAttribute("date", new Date().toISOString().slice(0, 10));
+  const add = (parent, tag, text) => { const el = doc.createElement(tag); if (text !== undefined) el.textContent = text; parent.appendChild(el); return el; };
+
+  const cust = add(root, "customer");
+  add(cust, "name", info.name); add(cust, "address", info.addr + ", " + info.city + " - " + info.pin); add(cust, "phone", info.phone);
+  const items = add(root, "items");
+  Object.entries(cart).forEach(([id, q]) => {
+    const p = byId(id), it = add(items, "item");
+    it.setAttribute("productId", id);
+    add(it, "name", p.name); add(it, "quantity", q); add(it, "unitPrice", p.price);
+  });
+  add(root, "payment", info.method === "card" ? "Card" : "Cash on delivery");
+  add(root, "shipping", ship);
+  add(root, "total", sub + ship);
+
+  const xml = new XMLSerializer().serializeToString(doc)
+    .replace(/></g, ">\n<");   // simple pretty print
+  const orders = load("orders", []); orders.push({ id: orderId, xml }); save("orders", orders);
+
+  $("confirmText").textContent = "Thank you, " + info.name + "! Your order " + orderId + " of " + money(sub + ship) + " has been placed.";
+  $("orderXml").textContent = '<?xml version="1.0" encoding="UTF-8"?>\n' + xml;
+
+  cart = {}; save("cart", cart); updateBadge();
+  $("checkoutForm").reset();
+  $("cardFields").style.display = "block";
+  showPage("confirm");
+}
+
+/* ---------- registration / login ---------- */
+function renderAuth() {
+  $("authLinks").innerHTML = currentUser
+    ? `<span style="font-size:14px;margin-right:6px">Hi, ${esc(currentUser.name.split(" ")[0])}</span><a class="link" id="logoutLink">Logout</a>`
+    : `<a class="link" data-page="login">Login</a><a class="link" data-page="register">Register</a>`;
+  const lo = $("logoutLink");
+  if (lo) lo.addEventListener("click", () => { currentUser = null; save("currentUser", null); renderAuth(); toast("Logged out"); showPage("home"); });
+}
+
+$("registerForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const name = $("rgName").value.trim(), email = $("rgEmail").value.trim().toLowerCase(),
+        p1 = $("rgPass").value, p2 = $("rgPass2").value;
+  if (name.length < 2) return setMsg("rgMsg", "Please enter your name.", "err");
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return setMsg("rgMsg", "Enter a valid email address.", "err");
+  if (p1.length < 6) return setMsg("rgMsg", "Password must be at least 6 characters.", "err");
+  if (p1 !== p2) return setMsg("rgMsg", "Passwords do not match.", "err");
+  const users = load("users", {});
+  if (users[email]) return setMsg("rgMsg", "An account with this email already exists.", "err");
+  users[email] = { name, passwordHash: await hash(p1) };
+  save("users", users);
+  $("registerForm").reset(); setMsg("rgMsg", "", "");
+  toast("Registration successful! Please log in.");
+  showPage("login");
+});
+
+$("loginForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const email = $("lgEmail").value.trim().toLowerCase(), pass = $("lgPass").value;
+  const user = load("users", {})[email];
+  if (!user || user.passwordHash !== await hash(pass)) return setMsg("lgMsg", "Invalid email or password.", "err");
+  currentUser = { name: user.name, email };
+  save("currentUser", currentUser);
+  $("loginForm").reset(); setMsg("lgMsg", "", "");
+  renderAuth(); toast("Welcome back, " + user.name + "!");
+  showPage("home");
+});
+
+/* ---------- feedback ---------- */
+$("feedbackForm").addEventListener("submit", e => {
+  e.preventDefault();
+  const name = $("fbName").value.trim(), email = $("fbEmail").value.trim(), text = $("fbText").value.trim();
+  if (!name || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return setMsg("fbMsg", "Please enter your name and a valid email.", "err");
+  if (text.length < 5) return setMsg("fbMsg", "Please write a short message.", "err");
+  const all = load("feedback", []);
+  all.push({ name, email, rating: $("fbRating").value, text, date: new Date().toISOString() });
+  save("feedback", all);
+  $("feedbackForm").reset();
+  setMsg("fbMsg", "Thank you for your feedback!", "ok");
+});
+
+/* ---------- init ---------- */
+setupFilters();
+renderFeatured();
+renderCatalog();
+updateBadge();
+renderAuth();
+showPage("home");
+</script>
+</body>
+</html>
